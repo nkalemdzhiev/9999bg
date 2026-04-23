@@ -6,13 +6,15 @@ defmodule WcInsightsWeb.MatchLive.Show do
 
   @impl true
   def mount(%{"id" => id}, _session, socket) do
-    match = safe_call(fn -> FootballData.get_match!(id) end, nil)
-    prediction = if match, do: safe_call(fn -> Predictions.predict_match(match) end, nil), else: nil
+    match_context = safe_call(fn -> FootballData.get_match_context!(id) end, nil)
+    match = if match_context, do: match_context.match, else: nil
+    prediction = if match_context, do: safe_call(fn -> Predictions.predict_match(match_context) end, nil), else: nil
 
     socket =
       socket
       |> assign(:page_title, "Match Details")
       |> assign(:match_id, id)
+      |> assign(:match_context, match_context)
       |> assign(:match, match)
       |> assign(:prediction, prediction)
 
@@ -48,19 +50,34 @@ defmodule WcInsightsWeb.MatchLive.Show do
             <div class="text-center text-3xl font-black text-slate-950"><%= scoreline(@match) %></div>
             <.team_block team_id={value(@match, :away_team_id)} team_name={value(@match, :away_team_name)} align="right" />
           </div>
+
+          <p :if={@match_context} class="mt-4 text-sm text-slate-500">
+            Model note: <%= value(@match_context, :context_label, "Projected from fresh lineup context.") %>
+          </p>
         </div>
 
         <section class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
           <h2 class="text-xl font-semibold text-slate-950">AI Prediction</h2>
 
           <div :if={!@prediction} class="mt-4 rounded-lg bg-slate-50 p-4 text-sm text-slate-600">
-            Prediction is not available. Set OPENAI_API_KEY to enable AI predictions.
+            Prediction is not available. Set GEMINI_API_KEY to enable AI predictions.
           </div>
 
           <div :if={@prediction} class="mt-4 space-y-3">
-            <div>
-              <p class="text-sm font-medium text-slate-500">Winner Pick</p>
-              <p class="text-2xl font-bold text-emerald-700"><%= value(@prediction, :winner_pick, "Unavailable") %></p>
+            <div class="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <p class="text-sm font-medium text-slate-500">Winner Pick</p>
+                <p class="text-2xl font-bold text-emerald-700"><%= value(@prediction, :winner_pick, "Unavailable") %></p>
+              </div>
+
+              <div class="text-right">
+                <p class="text-sm font-medium text-slate-500">Projected Strength</p>
+                <p class="font-semibold text-slate-700">
+                  <%= value(@match, :home_team_name) %> <%= value(@prediction, :home_score, "-") %> -
+                  <%= value(@prediction, :away_score, "-") %> <%= value(@match, :away_team_name) %>
+                </p>
+                <p class="text-xs text-slate-500">Confidence: <%= value(@prediction, :confidence, "unknown") %></p>
+              </div>
             </div>
 
             <div>
@@ -70,6 +87,28 @@ defmodule WcInsightsWeb.MatchLive.Show do
 
             <p class="text-xs text-slate-500">Generated: <%= value(@prediction, :generated_at, "unknown") %></p>
             <p class="text-xs text-slate-400">Source: <%= value(@prediction, :source, "unknown") %></p>
+          </div>
+        </section>
+
+        <section :if={@match_context} class="grid gap-6 lg:grid-cols-2">
+          <div class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+            <h2 class="text-lg font-semibold text-slate-950"><%= value(@match, :home_team_name) %> expected key players</h2>
+            <ul class="mt-4 space-y-2 text-sm text-slate-700">
+              <li :for={player <- Enum.take(value(@match_context, :expected_lineups, %{})[:home] || [], 5)}>
+                <span class="font-medium"><%= player.name %></span>
+                <span class="text-slate-500">(<%= player.position %>) rating <%= player.recent_stats.rating %></span>
+              </li>
+            </ul>
+          </div>
+
+          <div class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+            <h2 class="text-lg font-semibold text-slate-950"><%= value(@match, :away_team_name) %> expected key players</h2>
+            <ul class="mt-4 space-y-2 text-sm text-slate-700">
+              <li :for={player <- Enum.take(value(@match_context, :expected_lineups, %{})[:away] || [], 5)}>
+                <span class="font-medium"><%= player.name %></span>
+                <span class="text-slate-500">(<%= player.position %>) rating <%= player.recent_stats.rating %></span>
+              </li>
+            </ul>
           </div>
         </section>
       </section>
@@ -111,11 +150,13 @@ defmodule WcInsightsWeb.MatchLive.Show do
 
   defp value(value, key, fallback \\ nil)
   defp value(nil, _key, fallback), do: fallback
+
   defp value(map, key, fallback) when is_map(map) do
     case Map.get(map, key) do
       nil -> Map.get(map, to_string(key)) || fallback
       val -> val
     end
   end
+
   defp value(_value, _key, fallback), do: fallback
 end

@@ -4,8 +4,8 @@ defmodule WcInsights.FootballData do
   """
 
   alias FootballData.Match
-  alias FootballData.Team
   alias FootballData.Player
+  alias FootballData.Team
 
   def list_matches do
     case WcInsights.FootballApi.Client.get_fixtures("2026") do
@@ -20,11 +20,43 @@ defmodule WcInsights.FootballData do
     end
   end
 
+  def get_match_context!(match_id) do
+    match = get_match!(match_id)
+    home_team = get_team!(match.home_team_id)
+    away_team = get_team!(match.away_team_id)
+
+    overrides =
+      WcInsights.PredictionSampleData.match_overrides(
+        match.id,
+        match.home_team_id,
+        match.away_team_id
+      )
+
+    home_players = merged_players(match.home_team_id, home_team.name)
+    away_players = merged_players(match.away_team_id, away_team.name)
+
+    %{
+      match: match,
+      home_team: home_team,
+      away_team: away_team,
+      home_players: home_players,
+      away_players: away_players,
+      expected_lineups: %{
+        home: enrich_lineup(home_players, overrides.expected_lineups.home),
+        away: enrich_lineup(away_players, overrides.expected_lineups.away)
+      },
+      missing_players: overrides.missing_players,
+      recent_team_form: overrides.recent_team_form,
+      team_stats: overrides.team_stats,
+      context_label: overrides.context_label
+    }
+  end
+
   def get_match!(match_id) do
     match_id_str = to_string(match_id)
 
     list_matches()
-    |> Enum.find(fn m -> to_string(m.id) == match_id_str end)
+    |> Enum.find(fn match -> to_string(match.id) == match_id_str end)
     |> case do
       nil -> find_mock_match(match_id_str)
       match -> match
@@ -36,10 +68,10 @@ defmodule WcInsights.FootballData do
     matches = list_matches()
 
     team_name =
-      Enum.find_value(matches, fn m ->
+      Enum.find_value(matches, fn match ->
         cond do
-          to_string(m.home_team_id) == team_id_str -> m.home_team_name
-          to_string(m.away_team_id) == team_id_str -> m.away_team_name
+          to_string(match.home_team_id) == team_id_str -> match.home_team_name
+          to_string(match.away_team_id) == team_id_str -> match.away_team_name
           true -> nil
         end
       end)
@@ -50,7 +82,7 @@ defmodule WcInsights.FootballData do
         _ -> build_placeholder_team(team_id, team_name)
       end
     else
-      build_placeholder_team(team_id, "Team #{team_id}")
+      build_placeholder_team(team_id, fallback_team_name(team_id))
     end
   end
 
@@ -68,7 +100,7 @@ defmodule WcInsights.FootballData do
     case WcInsights.FootballApi.Client.get_squad(team_id) do
       {:ok, %{"player" => players}} when is_list(players) ->
         players
-        |> Enum.reject(fn p -> p["strPosition"] in ["Manager", "Coach", "Head Coach", ""] end)
+        |> Enum.reject(fn player -> player["strPosition"] in ["Manager", "Coach", "Head Coach", ""] end)
         |> Enum.map(&parse_player/1)
 
       _ ->
@@ -84,8 +116,8 @@ defmodule WcInsights.FootballData do
   def upcoming_matches(matches) do
     now = DateTime.utc_now()
 
-    Enum.filter(matches, fn m ->
-      m.status == "NS" and not is_nil(m.kickoff_at) and DateTime.compare(m.kickoff_at, now) == :gt
+    Enum.filter(matches, fn match ->
+      match.status == "NS" and not is_nil(match.kickoff_at) and DateTime.compare(match.kickoff_at, now) == :gt
     end)
   end
 
@@ -123,7 +155,12 @@ defmodule WcInsights.FootballData do
       code: team["strTeamShort"],
       country: team["strCountry"] || "Unknown",
       founded: parse_integer(team["intFormedYear"]),
-      national: team["strLeague"] in ["FIFA World Cup", "International Friendlies", "World Cup Qualifying CONMEBOL"],
+      national:
+        team["strLeague"] in [
+          "FIFA World Cup",
+          "International Friendlies",
+          "World Cup Qualifying CONMEBOL"
+        ],
       logo: team["strTeamBadge"],
       venue_name: team["strStadium"],
       venue_city: parse_city(team["strLocation"]),
@@ -143,6 +180,7 @@ defmodule WcInsights.FootballData do
   end
 
   defp map_status(nil), do: "NS"
+  defp map_status(""), do: "NS"
   defp map_status("Not Started"), do: "NS"
   defp map_status("Match Finished"), do: "FT"
   defp map_status("First Half"), do: "1H"
@@ -160,6 +198,7 @@ defmodule WcInsights.FootballData do
 
   defp parse_datetime(nil), do: nil
   defp parse_datetime(""), do: nil
+
   defp parse_datetime(string) when is_binary(string) do
     case NaiveDateTime.from_iso8601(string) do
       {:ok, naive} -> DateTime.from_naive!(naive, "Etc/UTC")
@@ -170,6 +209,7 @@ defmodule WcInsights.FootballData do
   defp parse_integer(nil), do: nil
   defp parse_integer(""), do: nil
   defp parse_integer(int) when is_integer(int), do: int
+
   defp parse_integer(string) when is_binary(string) do
     case Integer.parse(string) do
       {num, _} -> num
@@ -179,11 +219,13 @@ defmodule WcInsights.FootballData do
 
   defp calculate_age(nil), do: nil
   defp calculate_age(""), do: nil
+
   defp calculate_age(date_string) when is_binary(date_string) do
     case Date.from_iso8601(date_string) do
       {:ok, birth_date} ->
         today = Date.utc_today()
         years = today.year - birth_date.year
+
         if Date.before?(today, %{birth_date | year: today.year}), do: years - 1, else: years
 
       _ ->
@@ -192,6 +234,7 @@ defmodule WcInsights.FootballData do
   end
 
   defp parse_city(nil), do: nil
+
   defp parse_city(location) when is_binary(location) do
     location
     |> String.split(",")
@@ -239,10 +282,55 @@ defmodule WcInsights.FootballData do
     match_id_str = to_string(match_id)
 
     load_mock_matches()
-    |> Enum.find(fn m -> to_string(m.id) == match_id_str end)
+    |> Enum.find(fn match -> to_string(match.id) == match_id_str end)
     |> case do
       nil -> raise "Match not found"
       match -> match
     end
   end
+
+  defp merged_players(team_id, team_name) do
+    case list_team_players(team_id) do
+      [] -> WcInsights.PredictionSampleData.fallback_players(team_id, team_name)
+      players -> players
+    end
+  end
+
+  defp enrich_lineup(players, lineup_overrides) do
+    overrides_by_id = Map.new(lineup_overrides, &{&1.id, &1})
+
+    players
+    |> Enum.map(fn player ->
+      base_player = normalize_player_map(player)
+
+      case Map.get(overrides_by_id, player.id) do
+        nil ->
+          Map.merge(base_player, %{expected_starter: false, recent_stats: %{rating: 6.5, minutes: 180}})
+
+        override ->
+          Map.merge(base_player, override)
+      end
+    end)
+    |> Enum.sort_by(fn player ->
+      starter_rank = not Map.get(player, :expected_starter, false)
+      rating_rank = -(Map.get(player.recent_stats, :rating, 0.0) * 100 |> round())
+      {starter_rank, rating_rank}
+    end)
+    |> Enum.take(max(length(lineup_overrides), 11))
+  end
+
+  defp normalize_player_map(%_{} = player), do: Map.from_struct(player)
+  defp normalize_player_map(player) when is_map(player), do: player
+
+  defp fallback_team_name(24), do: "Argentina"
+  defp fallback_team_name(26), do: "Mexico"
+  defp fallback_team_name(6), do: "Brazil"
+  defp fallback_team_name(2), do: "France"
+  defp fallback_team_name(14), do: "Germany"
+  defp fallback_team_name(15), do: "Spain"
+  defp fallback_team_name(10), do: "England"
+  defp fallback_team_name(21), do: "Portugal"
+  defp fallback_team_name(27), do: "USA"
+  defp fallback_team_name(3), do: "Netherlands"
+  defp fallback_team_name(team_id), do: "Team #{team_id}"
 end
