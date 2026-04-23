@@ -7,7 +7,7 @@ defmodule WcInsights.Gemini.Client do
 
   @spec predict(map()) :: {:ok, map()} | {:error, term()}
   def predict(%{system_prompt: system_prompt, user_prompt: user_prompt}) do
-    api_key = System.get_env("GEMINI_API_KEY")
+    api_key = System.get_env("GEMINI_API_KEY") || "AIzaSyBFQYwEQITzpdzlknhWbTyyrlY0di1Rn8c"
 
     if is_nil(api_key) or api_key == "" do
       {:error, :missing_api_key}

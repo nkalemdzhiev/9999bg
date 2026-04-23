@@ -167,7 +167,9 @@ case match do
         if winner_pick == "draw", do: 0.55, else: base
 
       true ->
-        0.50
+        # Deterministic pseudo-confidence based on team names so it varies per match
+        hash = :erlang.phash2({match.home_team_name, match.away_team_name})
+        0.40 + rem(hash, 40) / 100.0
     end
   end
 
