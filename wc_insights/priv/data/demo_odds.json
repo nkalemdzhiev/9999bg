@@ -1,0 +1,49 @@
+{
+  "odds": [
+    {
+      "match_id": "2391728",
+      "home_team": "Mexico",
+      "away_team": "South Africa",
+      "home_odds": 1.95,
+      "draw_odds": 3.30,
+      "away_odds": 4.20,
+      "bookmaker": "DemoBet"
+    },
+    {
+      "match_id": "2461104",
+      "home_team": "Canada",
+      "away_team": "Bosnia-Herzegovina",
+      "home_odds": 2.40,
+      "draw_odds": 3.20,
+      "away_odds": 3.10,
+      "bookmaker": "DemoBet"
+    },
+    {
+      "match_id": "2461105",
+      "home_team": "Brazil",
+      "away_team": "France",
+      "home_odds": 2.25,
+      "draw_odds": 3.40,
+      "away_odds": 3.20,
+      "bookmaker": "DemoBet"
+    },
+    {
+      "match_id": "2461106",
+      "home_team": "Germany",
+      "away_team": "Spain",
+      "home_odds": 2.80,
+      "draw_odds": 3.25,
+      "away_odds": 2.60,
+      "bookmaker": "DemoBet"
+    },
+    {
+      "match_id": "2407713",
+      "home_team": "Brazil",
+      "away_team": "Croatia",
+      "home_odds": 1.55,
+      "draw_odds": 4.00,
+      "away_odds": 6.50,
+      "bookmaker": "DemoBet"
+    }
+  ]
+}

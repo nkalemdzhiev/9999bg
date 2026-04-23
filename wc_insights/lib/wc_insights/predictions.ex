@@ -11,6 +11,7 @@ defmodule WcInsights.Predictions do
           match_id: integer(),
           winner_pick: String.t(),
           reasoning: String.t(),
+          confidence: float(),
           generated_at: String.t(),
           source: atom()
         }
@@ -20,8 +21,9 @@ defmodule WcInsights.Predictions do
     prompt = build_prompt(match)
 
     case Client.predict(%{prompt: prompt}) do
-      {:ok, %{"winner_pick" => winner_pick, "reasoning" => reasoning}} ->
-        prediction_payload(match, winner_pick, reasoning, :openai)
+      {:ok, %{"winner_pick" => winner_pick, "reasoning" => reasoning} = result} ->
+        confidence = Map.get(result, "confidence", 0.50)
+        prediction_payload(match, winner_pick, reasoning, confidence, :openai)
 
       {:error, _reason} ->
         fallback_prediction(match)
@@ -51,6 +53,7 @@ defmodule WcInsights.Predictions do
     Return JSON with exactly these keys:
     - "winner_pick": must be exactly "home", "away", or "draw"
     - "reasoning": a short 1-2 sentence explanation
+    - "confidence": a number from 0.0 to 1.0 representing your certainty
     """
   end
 
@@ -63,21 +66,36 @@ defmodule WcInsights.Predictions do
         true -> Enum.random(["home", "away", "draw"])
       end
 
+    confidence = fallback_confidence(match, winner_pick)
+
     reasoning =
       "Based on the match context and team strength, the prediction favors #{pick_name(match, winner_pick)}."
 
-    prediction_payload(match, winner_pick, reasoning, :fallback)
+    prediction_payload(match, winner_pick, reasoning, confidence, :fallback)
+  end
+
+  defp fallback_confidence(match, winner_pick) do
+    cond do
+      match.status in ["FT", "AET", "PEN"] ->
+        diff = abs((match.score_home || 0) - (match.score_away || 0))
+        base = min(0.50 + diff * 0.08, 0.95)
+        if winner_pick == "draw", do: 0.55, else: base
+
+      true ->
+        0.50
+    end
   end
 
   defp pick_name(match, "home"), do: match.home_team_name
   defp pick_name(match, "away"), do: match.away_team_name
   defp pick_name(_, "draw"), do: "a draw"
 
-  defp prediction_payload(match, winner_pick, reasoning, source) do
+  defp prediction_payload(match, winner_pick, reasoning, confidence, source) do
     %{
       match_id: match.id,
       winner_pick: winner_pick,
       reasoning: reasoning,
+      confidence: confidence,
       generated_at: DateTime.utc_now() |> DateTime.truncate(:second) |> DateTime.to_iso8601(),
       source: source
     }

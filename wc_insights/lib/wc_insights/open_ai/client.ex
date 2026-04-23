@@ -19,7 +19,7 @@ defmodule WcInsights.OpenAI.Client do
           %{
             role: "system",
             content:
-              "You are a football match prediction assistant. Return only JSON with keys: winner_pick, reasoning. winner_pick must be exactly 'home', 'away', or 'draw'."
+              "You are a football match prediction assistant. Return only JSON with keys: winner_pick, reasoning, confidence. winner_pick must be exactly 'home', 'away', or 'draw'. confidence is a number from 0.0 to 1.0 representing your certainty."
           },
           %{role: "user", content: prompt}
         ],
@@ -48,6 +48,7 @@ defmodule WcInsights.OpenAI.Client do
   defp parse_chat_response(%{"choices" => [%{"message" => %{"content" => raw_json}} | _]}) do
     case Jason.decode(raw_json) do
       {:ok, %{"winner_pick" => _, "reasoning" => _} = result} ->
+        result = Map.put_new(result, "confidence", 0.50)
         {:ok, result}
 
       {:ok, _} ->
