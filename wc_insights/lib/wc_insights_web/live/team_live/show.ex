@@ -22,8 +22,9 @@ defmodule WcInsightsWeb.TeamLive.Show do
     ~H"""
     <Navigation.main />
 
-    <main class="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-      <.link navigate={~p"/"} class="mb-6 inline-flex text-sm font-semibold text-emerald-700 hover:text-emerald-900">
+    <main class="bg-slate-50">
+      <div class="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+      <.link navigate={~p"/"} class="mb-6 inline-flex rounded-lg bg-white px-3 py-2 text-sm font-bold text-emerald-700 ring-1 ring-slate-200 hover:bg-emerald-50">
         ← Back to matches
       </.link>
 
@@ -33,9 +34,9 @@ defmodule WcInsightsWeb.TeamLive.Show do
       </div>
 
       <section :if={@status} class="space-y-8">
-        <header>
+        <header class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
           <p class="text-sm font-semibold uppercase text-emerald-700">Team Status</p>
-          <h1 class="mt-2 text-3xl font-bold text-slate-950 sm:text-4xl">
+          <h1 class="mt-2 text-4xl font-black text-slate-950 sm:text-6xl">
             <%= team_name(value(@status, :team)) %>
           </h1>
         </header>
@@ -47,8 +48,8 @@ defmodule WcInsightsWeb.TeamLive.Show do
           </div>
           <div :if={!Enum.empty?(players(@status))} class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <article :for={player <- players(@status)} class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-              <h3 class="font-semibold text-slate-950"><%= value(player, :name, "Unknown player") %></h3>
-              <p class="mt-1 text-sm text-slate-600">
+              <h3 class="font-black text-slate-950"><%= value(player, :name, "Unknown player") %></h3>
+              <p class="mt-1 text-sm font-semibold text-slate-600">
                 <%= value(player, :position, "Position unavailable") %>
                 <%= if value(player, :number), do: " · ##{value(player, :number)}", else: "" %>
               </p>
@@ -84,6 +85,7 @@ defmodule WcInsightsWeb.TeamLive.Show do
           </ul>
         </section>
       </section>
+      </div>
     </main>
     """
   end

@@ -7,8 +7,20 @@ defmodule WcInsightsWeb.MatchLive.Show do
   @impl true
   def mount(%{"id" => id}, _session, socket) do
     match = safe_call(fn -> FootballData.get_match!(id) end, nil)
-    prediction = if match, do: safe_call(fn -> Predictions.predict_match(match) end, nil), else: nil
-    odds_comparison = if match && prediction, do: safe_call(fn -> OddsComparison.compare(match, prediction) end, nil), else: nil
+
+    prediction =
+      if match do
+        safe_call(fn -> Predictions.predict_match(match) end, nil)
+      else
+        nil
+      end
+
+    odds_comparison =
+      if match && prediction do
+        safe_call(fn -> OddsComparison.compare(match, prediction) end, nil)
+      else
+        nil
+      end
 
     socket =
       socket
@@ -26,8 +38,9 @@ defmodule WcInsightsWeb.MatchLive.Show do
     ~H"""
     <Navigation.main />
 
-    <main class="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
-      <.link navigate={~p"/"} class="mb-6 inline-flex text-sm font-semibold text-emerald-700 hover:text-emerald-900">
+    <main class="bg-slate-50">
+      <div class="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+      <.link navigate={~p"/"} class="mb-6 inline-flex rounded-lg bg-white px-3 py-2 text-sm font-bold text-emerald-700 ring-1 ring-slate-200 hover:bg-emerald-50">
         ← Back to matches
       </.link>
 
@@ -37,8 +50,9 @@ defmodule WcInsightsWeb.MatchLive.Show do
       </div>
 
       <section :if={@match} class="space-y-6">
-        <%!-- Scoreboard --%>
-        <div class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+        <div class="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+          <div class="h-1 bg-emerald-600"></div>
+          <div class="p-6">
           <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
             <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase text-slate-600">
               <%= value(@match, :status_long, "Scheduled") %>
@@ -48,33 +62,40 @@ defmodule WcInsightsWeb.MatchLive.Show do
 
           <div class="grid grid-cols-[1fr_auto_1fr] items-center gap-4">
             <.team_block team_id={value(@match, :home_team_id)} team_name={value(@match, :home_team_name)} />
-            <div class="text-center text-3xl font-black text-slate-950"><%= scoreline(@match) %></div>
+            <div class="rounded-lg bg-slate-950 px-6 py-5 text-center text-3xl font-black text-white"><%= scoreline(@match) %></div>
             <.team_block team_id={value(@match, :away_team_id)} team_name={value(@match, :away_team_name)} align="right" />
+          </div>
           </div>
         </div>
 
-        <%!-- AI Prediction --%>
-        <section class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 class="text-xl font-semibold text-slate-950">AI Prediction</h2>
+        <section class="rounded-lg border border-emerald-200 bg-white p-6 shadow-sm">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <h2 class="text-xl font-black text-slate-950">AI prediction</h2>
+            <span :if={@prediction} class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-black uppercase text-emerald-700 ring-1 ring-emerald-200">
+              <%= value(@prediction, :source, "unknown") %>
+            </span>
+          </div>
 
           <div :if={!@prediction} class="mt-4 rounded-lg bg-slate-50 p-4 text-sm text-slate-600">
-            Prediction is not available. Set OPENAI_API_KEY to enable AI predictions.
+            Prediction is not available. Set GEMINI_API_KEY to enable AI predictions.
           </div>
 
           <div :if={@prediction} class="mt-4 space-y-3">
-            <div>
-              <p class="text-sm font-medium text-slate-500">Winner Pick</p>
-              <p class="text-2xl font-bold text-emerald-700"><%= value(@prediction, :winner_pick, "Unavailable") %></p>
+            <div class="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <p class="text-sm font-bold text-slate-500">Winner pick</p>
+                <p class="text-4xl font-black text-emerald-700"><%= value(@prediction, :winner_pick, "Unavailable") %></p>
+              </div>
+
+              <div class="text-right">
+                <p class="text-sm font-bold text-slate-500">Confidence</p>
+                <p class="text-lg font-semibold text-slate-800"><%= format_percent(value(@prediction, :confidence, 0.50)) %></p>
+              </div>
             </div>
 
             <div>
-              <p class="text-sm font-medium text-slate-500">Confidence</p>
-              <p class="text-lg font-semibold text-slate-800"><%= format_percent(value(@prediction, :confidence, 0.50)) %></p>
-            </div>
-
-            <div>
-              <p class="text-sm font-medium text-slate-500">Reasoning</p>
-              <p class="mt-1 text-slate-700"><%= value(@prediction, :reasoning, "No reasoning returned.") %></p>
+              <p class="text-sm font-bold text-slate-500">Reasoning</p>
+              <p class="mt-1 leading-7 text-slate-700"><%= value(@prediction, :reasoning, "No reasoning returned.") %></p>
             </div>
 
             <p class="text-xs text-slate-500">Generated: <%= value(@prediction, :generated_at, "unknown") %></p>
@@ -85,8 +106,8 @@ defmodule WcInsightsWeb.MatchLive.Show do
         <%!-- Odds Comparison --%>
         <section :if={@odds_comparison} class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
           <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <h2 class="text-xl font-semibold text-slate-950">Odds Comparison</h2>
-            <span class={"rounded-full border px-3 py-1 text-xs font-bold uppercase #{OddsComparison.recommendation_color(@odds_comparison.recommendation)}"}>
+            <h2 class="text-xl font-black text-slate-950">Odds Comparison</h2>
+            <span class={"rounded-full border px-3 py-1 text-xs font-black uppercase #{OddsComparison.recommendation_color(@odds_comparison.recommendation)}"}>
               <%= OddsComparison.recommendation_label(@odds_comparison.recommendation) %>
             </span>
           </div>
@@ -94,15 +115,15 @@ defmodule WcInsightsWeb.MatchLive.Show do
           <%!-- Bookmaker odds row --%>
           <div class="mb-6 grid grid-cols-3 gap-4 text-center">
             <div>
-              <p class="text-xs font-medium uppercase text-slate-500"><%= value(@match, :home_team_name, "Home") %> Odds</p>
+              <p class="text-xs font-bold uppercase text-slate-500"><%= value(@match, :home_team_name, "Home") %> Odds</p>
               <p class="text-xl font-bold text-slate-900"><%= format_decimal(@odds_comparison.odds.home_odds) %></p>
             </div>
             <div>
-              <p class="text-xs font-medium uppercase text-slate-500">Draw Odds</p>
+              <p class="text-xs font-bold uppercase text-slate-500">Draw Odds</p>
               <p class="text-xl font-bold text-slate-900"><%= format_decimal(@odds_comparison.odds.draw_odds) %></p>
             </div>
             <div>
-              <p class="text-xs font-medium uppercase text-slate-500"><%= value(@match, :away_team_name, "Away") %> Odds</p>
+              <p class="text-xs font-bold uppercase text-slate-500"><%= value(@match, :away_team_name, "Away") %> Odds</p>
               <p class="text-xl font-bold text-slate-900"><%= format_decimal(@odds_comparison.odds.away_odds) %></p>
             </div>
           </div>
@@ -126,20 +147,20 @@ defmodule WcInsightsWeb.MatchLive.Show do
           <div class="rounded-lg bg-slate-50 p-4">
             <div class="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <p class="text-sm font-medium text-slate-500">AI Confidence</p>
+                <p class="text-sm font-bold text-slate-500">AI Confidence</p>
                 <p class="text-lg font-semibold text-slate-800"><%= format_percent(@odds_comparison.ai_confidence) %></p>
               </div>
               <div class="text-center">
-                <p class="text-xs font-medium uppercase text-slate-400">vs</p>
+                <p class="text-xs font-bold uppercase text-slate-400">vs</p>
               </div>
               <div class="text-right">
-                <p class="text-sm font-medium text-slate-500">Bookie Implied</p>
+                <p class="text-sm font-bold text-slate-500">Bookie Implied</p>
                 <p class="text-lg font-semibold text-slate-800"><%= format_percent(@odds_comparison.bookie_confidence) %></p>
               </div>
             </div>
 
             <div class="mt-3 border-t border-slate-200 pt-3 text-center">
-              <p class="text-sm font-medium text-slate-500">Edge</p>
+              <p class="text-sm font-bold text-slate-500">Edge</p>
               <p class={"text-2xl font-black #{edge_color(@odds_comparison.edge)}"}>
                 <%= OddsComparison.format_edge(@odds_comparison.edge) %>
               </p>
@@ -147,11 +168,11 @@ defmodule WcInsightsWeb.MatchLive.Show do
           </div>
 
           <p class="mt-3 text-xs text-slate-400">
-            Odds source:
-            <%= source_label(@odds_comparison.odds.source) %>
+            Odds source: <%= source_label(@odds_comparison.odds.source) %>
           </p>
         </section>
       </section>
+      </div>
     </main>
     """
   end
@@ -197,7 +218,7 @@ defmodule WcInsightsWeb.MatchLive.Show do
 
     ~H"""
     <div class={if @align == "right", do: "text-right", else: "text-left"}>
-      <.link :if={@team_id} navigate={~p"/teams/#{@team_id}"} class="text-xl font-bold text-slate-950 hover:text-emerald-700">
+      <.link :if={@team_id} navigate={~p"/teams/#{@team_id}"} class="text-2xl font-black text-slate-950 hover:text-emerald-700">
         <%= @team_name %>
       </.link>
       <span :if={!@team_id} class="text-xl font-bold text-slate-950"><%= @team_name %></span>
@@ -247,11 +268,13 @@ defmodule WcInsightsWeb.MatchLive.Show do
 
   defp value(value, key, fallback \\ nil)
   defp value(nil, _key, fallback), do: fallback
+
   defp value(map, key, fallback) when is_map(map) do
     case Map.get(map, key) do
       nil -> Map.get(map, to_string(key)) || fallback
       val -> val
     end
   end
+
   defp value(_value, _key, fallback), do: fallback
 end

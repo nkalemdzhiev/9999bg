@@ -8,7 +8,8 @@
 import Config
 
 config :wc_insights,
-  generators: [timestamp_type: :utc_datetime]
+  generators: [timestamp_type: :utc_datetime],
+  ai_prediction_client: WcInsights.Gemini.Client
 
 # Configure the endpoint
 config :wc_insights, WcInsightsWeb.Endpoint,

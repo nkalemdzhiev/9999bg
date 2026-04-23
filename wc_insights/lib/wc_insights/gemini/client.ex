@@ -1,80 +1,80 @@
 defmodule WcInsights.Gemini.Client do
   @moduledoc """
   Google Gemini client using Req for match predictions.
-  Replaces OpenAI as the AI provider.
   """
 
-  @endpoint "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
+  @base_url "https://generativelanguage.googleapis.com/v1beta/models"
 
-  @spec predict(%{prompt: String.t()}) :: {:ok, map()} | {:error, String.t()}
-  def predict(%{prompt: prompt}) do
+  @spec predict(map()) :: {:ok, map()} | {:error, term()}
+  def predict(%{system_prompt: system_prompt, user_prompt: user_prompt}) do
     api_key = System.get_env("GEMINI_API_KEY")
 
     if is_nil(api_key) or api_key == "" do
-      {:error, "GEMINI_API_KEY not set"}
+      {:error, :missing_api_key}
     else
-      do_predict(api_key, prompt)
+      do_predict(api_key, system_prompt, user_prompt)
     end
   end
 
-  defp do_predict(api_key, prompt) do
-    url = "#{@endpoint}?key=#{api_key}"
+  defp do_predict(api_key, system_prompt, user_prompt) do
+    model = System.get_env("GEMINI_MODEL") || "gemini-2.5-flash"
 
     body = %{
       contents: [
         %{
+          role: "user",
           parts: [
-            %{text: build_system_prompt() <> "\n\n" <> prompt}
+            %{
+              text: """
+              #{system_prompt}
+
+              #{user_prompt}
+              """
+            }
           ]
         }
       ],
       generationConfig: %{
-        responseMimeType: "application/json"
+        responseMimeType: "application/json",
+        responseJsonSchema: %{
+          type: "object",
+          additionalProperties: false,
+          required: ["winner_pick", "reasoning", "confidence"],
+          properties: %{
+            winner_pick: %{type: "string", description: "The predicted winner: home, away, or draw."},
+            reasoning: %{type: "string", description: "Short fan-friendly explanation in no more than two sentences."},
+            confidence: %{type: "number", description: "Confidence from 0.0 to 1.0"}
+          }
+        }
       }
     }
 
-    case Req.post(url,
+    case Req.post(
+           "#{@base_url}/#{model}:generateContent?key=#{api_key}",
            headers: [{"content-type", "application/json"}],
            json: body
          ) do
       {:ok, %{status: 200, body: response}} ->
-        parse_gemini_response(response)
+        parse_response(response)
 
       {:ok, %{status: status, body: body}} ->
-        {:error, "Gemini HTTP #{status}: #{inspect(body)}"}
+        {:error, {:http_error, status, body}}
 
       {:error, reason} ->
-        {:error, inspect(reason)}
+        {:error, reason}
     end
   end
 
-  defp build_system_prompt do
-    """
-    You are a football match prediction assistant.
-    Return only valid JSON with exactly these keys:
-    - "winner_pick": must be exactly "home", "away", or "draw"
-    - "reasoning": a short 1-2 sentence explanation
-    - "confidence": a number from 0.0 to 1.0 representing your certainty
-    """
-  end
-
-  defp parse_gemini_response(%{"candidates" => [%{"content" => %{"parts" => [%{"text" => raw_json}]}} | _]}) do
-    case Jason.decode(raw_json) do
-      {:ok, %{"winner_pick" => _, "reasoning" => _} = result} ->
-        result = Map.put_new(result, "confidence", 0.50)
-        {:ok, result}
-
-      {:ok, _} ->
-        {:error, "Invalid prediction JSON shape from Gemini"}
-
-      {:error, reason} ->
-        {:error, "Gemini JSON decode error: #{inspect(reason)}"}
+  defp parse_response(%{"candidates" => [%{"content" => %{"parts" => [%{"text" => text} | _]}} | _]}) do
+    case Jason.decode(text) do
+      {:ok, %{} = result} -> {:ok, result}
+      {:error, reason} -> {:error, {:json_decode, reason}}
     end
   end
 
-  defp parse_gemini_response(%{"error" => error}) do
-    {:error, "Gemini API error: #{inspect(error)}"}
+  defp parse_response(%{"promptFeedback" => feedback}) when is_map(feedback) do
+    {:error, {:prompt_feedback, feedback}}
   end
 
-  defp parse_gemini_response(_), do: {:error, "Unexpected Gemini response format"}
+  defp parse_response(response), do: {:error, {:unexpected_response, response}}
 end
