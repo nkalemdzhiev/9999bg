@@ -22,11 +22,11 @@ defmodule WcInsights.Odds do
   Fetch odds for a match by ID.
   Returns {:ok, odds_map} or {:error, reason}.
   """
-  @spec fetch_odds(integer() | String.t()) :: {:ok, odds_map()} | {:error, String.t()}
-  def fetch_odds(match_id) do
+  @spec fetch_odds(integer() | String.t(), String.t(), String.t()) :: {:ok, odds_map()} | {:error, String.t()}
+  def fetch_odds(match_id, home_team \\ "", away_team \\ "") do
     match_id_str = to_string(match_id)
 
-    case SharpApiClient.get_odds(match_id_str) do
+    case SharpApiClient.get_odds(match_id_str, home_team, away_team) do
       {:ok, odds} -> {:ok, Map.put(odds, :source, :live)}
       {:error, _} -> fetch_demo_odds(match_id_str)
     end

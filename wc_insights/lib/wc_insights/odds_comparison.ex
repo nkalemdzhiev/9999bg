@@ -31,7 +31,7 @@ defmodule WcInsights.OddsComparison do
   """
   @spec compare(Match.t(), map()) :: comparison_result()
   def compare(%Match{} = match, ai_prediction) do
-    with {:ok, odds} <- Odds.fetch_odds(match.id),
+    with {:ok, odds} <- Odds.fetch_odds(match.id, match.home_team_name, match.away_team_name),
          implied = Odds.implied_probabilities(odds) do
       ai_pick = ai_prediction[:winner_pick] || "home"
       ai_confidence = ai_prediction[:confidence] || 0.50
