@@ -26,8 +26,9 @@ defmodule WcInsightsWeb.MatchLive.Show do
     ~H"""
     <Navigation.main />
 
-    <main class="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
-      <.link navigate={~p"/"} class="mb-6 inline-flex text-sm font-semibold text-emerald-700 hover:text-emerald-900">
+    <main class="bg-slate-50">
+      <div class="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+      <.link navigate={~p"/"} class="mb-6 inline-flex rounded-lg bg-white px-3 py-2 text-sm font-bold text-emerald-700 ring-1 ring-slate-200 hover:bg-emerald-50">
         ← Back to matches
       </.link>
 
@@ -37,7 +38,9 @@ defmodule WcInsightsWeb.MatchLive.Show do
       </div>
 
       <section :if={@match} class="space-y-6">
-        <div class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+        <div class="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+          <div class="h-1 bg-emerald-600"></div>
+          <div class="p-6">
           <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
             <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase text-slate-600">
               <%= value(@match, :status_long, "Scheduled") %>
@@ -47,17 +50,23 @@ defmodule WcInsightsWeb.MatchLive.Show do
 
           <div class="grid grid-cols-[1fr_auto_1fr] items-center gap-4">
             <.team_block team_id={value(@match, :home_team_id)} team_name={value(@match, :home_team_name)} />
-            <div class="text-center text-3xl font-black text-slate-950"><%= scoreline(@match) %></div>
+            <div class="rounded-lg bg-slate-950 px-6 py-5 text-center text-3xl font-black text-white"><%= scoreline(@match) %></div>
             <.team_block team_id={value(@match, :away_team_id)} team_name={value(@match, :away_team_name)} align="right" />
           </div>
 
           <p :if={@match_context} class="mt-4 text-sm text-slate-500">
             Model note: <%= value(@match_context, :context_label, "Projected from fresh lineup context.") %>
           </p>
+          </div>
         </div>
 
-        <section class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 class="text-xl font-semibold text-slate-950">AI Prediction</h2>
+        <section class="rounded-lg border border-emerald-200 bg-white p-6 shadow-sm">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <h2 class="text-xl font-black text-slate-950">AI prediction</h2>
+            <span :if={@prediction} class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-black uppercase text-emerald-700 ring-1 ring-emerald-200">
+              <%= value(@prediction, :source, "unknown") %>
+            </span>
+          </div>
 
           <div :if={!@prediction} class="mt-4 rounded-lg bg-slate-50 p-4 text-sm text-slate-600">
             Prediction is not available. Set GEMINI_API_KEY to enable AI predictions.
@@ -66,12 +75,12 @@ defmodule WcInsightsWeb.MatchLive.Show do
           <div :if={@prediction} class="mt-4 space-y-3">
             <div class="flex flex-wrap items-start justify-between gap-4">
               <div>
-                <p class="text-sm font-medium text-slate-500">Winner Pick</p>
-                <p class="text-2xl font-bold text-emerald-700"><%= value(@prediction, :winner_pick, "Unavailable") %></p>
+                <p class="text-sm font-bold text-slate-500">Winner pick</p>
+                <p class="text-4xl font-black text-emerald-700"><%= value(@prediction, :winner_pick, "Unavailable") %></p>
               </div>
 
               <div class="text-right">
-                <p class="text-sm font-medium text-slate-500">Projected Strength</p>
+                <p class="text-sm font-bold text-slate-500">Projected strength</p>
                 <p class="font-semibold text-slate-700">
                   <%= value(@match, :home_team_name) %> <%= value(@prediction, :home_score, "-") %> -
                   <%= value(@prediction, :away_score, "-") %> <%= value(@match, :away_team_name) %>
@@ -81,8 +90,8 @@ defmodule WcInsightsWeb.MatchLive.Show do
             </div>
 
             <div>
-              <p class="text-sm font-medium text-slate-500">Reasoning</p>
-              <p class="mt-1 text-slate-700"><%= value(@prediction, :reasoning, "No reasoning returned.") %></p>
+              <p class="text-sm font-bold text-slate-500">Reasoning</p>
+              <p class="mt-1 leading-7 text-slate-700"><%= value(@prediction, :reasoning, "No reasoning returned.") %></p>
             </div>
 
             <p class="text-xs text-slate-500">Generated: <%= value(@prediction, :generated_at, "unknown") %></p>
@@ -112,6 +121,7 @@ defmodule WcInsightsWeb.MatchLive.Show do
           </div>
         </section>
       </section>
+      </div>
     </main>
     """
   end
@@ -121,7 +131,7 @@ defmodule WcInsightsWeb.MatchLive.Show do
 
     ~H"""
     <div class={if @align == "right", do: "text-right", else: "text-left"}>
-      <.link :if={@team_id} navigate={~p"/teams/#{@team_id}"} class="text-xl font-bold text-slate-950 hover:text-emerald-700">
+      <.link :if={@team_id} navigate={~p"/teams/#{@team_id}"} class="text-2xl font-black text-slate-950 hover:text-emerald-700">
         <%= @team_name %>
       </.link>
       <span :if={!@team_id} class="text-xl font-bold text-slate-950"><%= @team_name %></span>
