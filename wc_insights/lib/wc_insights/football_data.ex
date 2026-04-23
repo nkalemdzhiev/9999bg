@@ -20,52 +20,26 @@ defmodule WcInsights.FootballData do
     end
   end
 
-  def get_match!(match_id) when is_integer(match_id) do
-    get_match!(Integer.to_string(match_id))
-  end
-
   def get_match!(match_id) do
-    case WcInsights.FootballApi.Client.get_event(match_id) do
-      {:ok, %{"events" => [event | _]}} ->
-        parse_event(event)
+    match_id_str = to_string(match_id)
 
-      {:ok, %{"events" => []}} ->
-        find_mock_match(match_id)
-
-      {:error, _reason} ->
-        find_mock_match(match_id)
+    list_matches()
+    |> Enum.find(fn m -> to_string(m.id) == match_id_str end)
+    |> case do
+      nil -> find_mock_match(match_id_str)
+      match -> match
     end
-  end
-
-  def get_team!(team_id) when is_integer(team_id) do
-    get_team!(Integer.to_string(team_id))
   end
 
   def get_team!(team_id) do
-    case WcInsights.FootballApi.Client.get_team(team_id) do
-      {:ok, %{"teams" => [team | _]}} ->
-        if team["idTeam"] == team_id do
-          parse_team(team)
-        else
-          search_team_fallback(team_id)
-        end
-
-      {:ok, %{"teams" => nil}} ->
-        search_team_fallback(team_id)
-
-      {:error, _reason} ->
-        search_team_fallback(team_id)
-    end
-  end
-
-  defp search_team_fallback(team_id) do
+    team_id_str = to_string(team_id)
     matches = list_matches()
 
     team_name =
       Enum.find_value(matches, fn m ->
         cond do
-          to_string(m.home_team_id) == to_string(team_id) -> m.home_team_name
-          to_string(m.away_team_id) == to_string(team_id) -> m.away_team_name
+          to_string(m.home_team_id) == team_id_str -> m.home_team_name
+          to_string(m.away_team_id) == team_id_str -> m.away_team_name
           true -> nil
         end
       end)
