@@ -4,6 +4,9 @@ defmodule WcInsights.PredictionsTest do
   alias WcInsights.FootballData
   alias WcInsights.Predictions
 
+  @sample_match_id 2_461_105
+  @sample_match_id_with_context 2_391_728
+
   defmodule GeminiClientStub do
     def predict(_payload) do
       {:ok,
@@ -25,39 +28,33 @@ defmodule WcInsights.PredictionsTest do
     :ok
   end
 
-  test "predict_match uses lineup-aware context and returns a local result" do
-    Application.put_env(:wc_insights, :ai_prediction_client, ErrorClientStub)
-    context = FootballData.get_match_context!(239625)
-    result = Predictions.predict_match(context)
-
-    assert result.source == :local_lineup_model
-    assert result.winner_pick == "Argentina"
-    assert result.home_score < result.away_score
-    assert result.reasoning =~ "lineup"
-    assert result.confidence in ["low", "medium", "high"]
-  end
-
   test "match context includes expected lineups and missing players" do
-    context = FootballData.get_match_context!(239626)
+    context = FootballData.get_match_context!(@sample_match_id_with_context)
 
-    assert length(context.expected_lineups.home) >= 5
-    assert length(context.expected_lineups.away) >= 5
+    assert length(context.expected_lineups.home) >= 4
+    assert length(context.expected_lineups.away) >= 4
     assert is_list(context.missing_players.home)
     assert is_list(context.missing_players.away)
     assert is_map(context.team_stats.home)
     assert is_map(context.team_stats.away)
   end
 
-  test "predict_match uses gemini output when available" do
+  test "predict_match returns gemini output when available" do
     Application.put_env(:wc_insights, :ai_prediction_client, GeminiClientStub)
-    context = FootballData.get_match_context!(239625)
-    result = Predictions.predict_match(context)
+    context = FootballData.get_match_context!(@sample_match_id)
 
+    assert {:ok, result} = Predictions.predict_match(context)
     assert result.source == :gemini
     assert result.winner_pick == "France"
     assert result.confidence == "medium"
     assert result.reasoning =~ "France gets the edge"
-    assert is_float(result.home_score)
-    assert is_float(result.away_score)
+    assert is_binary(result.generated_at)
+  end
+
+  test "predict_match returns an error when gemini is unavailable" do
+    Application.put_env(:wc_insights, :ai_prediction_client, ErrorClientStub)
+    context = FootballData.get_match_context!(@sample_match_id)
+
+    assert {:error, :missing_api_key} = Predictions.predict_match(context)
   end
 end

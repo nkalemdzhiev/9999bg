@@ -1,7 +1,7 @@
 defmodule WcInsightsWeb.HomeLive do
   use WcInsightsWeb, :live_view
 
-  alias WcInsights.{FootballData, PredictionSampleData, Predictions}
+  alias WcInsights.{FootballData, Predictions}
   alias WcInsightsWeb.Navigation
 
   @impl true
@@ -80,7 +80,7 @@ defmodule WcInsightsWeb.HomeLive do
           <div :if={prediction = @predictions[value(match, :id)]} class="mt-4 rounded-lg bg-emerald-50 p-3">
             <p class="text-xs font-bold uppercase text-emerald-700">Predicted winner</p>
             <div class="mt-1 flex flex-wrap items-center justify-between gap-2">
-              <span class="text-base font-bold text-slate-950"><%= prediction_winner(match, prediction) %></span>
+              <span class="text-base font-bold text-slate-950"><%= value(prediction, :winner_pick, "Unavailable") %></span>
               <span class="rounded-full bg-white px-3 py-1 text-xs font-bold uppercase text-emerald-700 ring-1 ring-emerald-200">
                 <%= prediction_confidence(prediction) %> confidence
               </span>
@@ -118,60 +118,22 @@ defmodule WcInsightsWeb.HomeLive do
   defp predictions_by_match(matches) do
     matches
     |> normalize_list()
-    |> Map.new(fn match ->
+    |> Enum.reduce(%{}, fn match, acc ->
       prediction =
         safe_call(fn ->
-          match
-          |> home_match_context()
-          |> local_home_prediction()
+          with context when is_map(context) <- FootballData.get_match_context!(value(match, :id)),
+               {:ok, result} <- Predictions.predict_match(context) do
+            result
+          else
+            _ -> nil
+          end
         end, nil)
 
-      {value(match, :id), prediction}
-    end)
-  end
-
-  defp home_match_context(match) do
-    overrides =
-      PredictionSampleData.match_overrides(
-        value(match, :id),
-        value(match, :home_team_id),
-        value(match, :away_team_id)
-      )
-
-    %{
-      match: match,
-      home_team: %{id: value(match, :home_team_id), name: value(match, :home_team_name, "Home")},
-      away_team: %{id: value(match, :away_team_id), name: value(match, :away_team_name, "Away")},
-      expected_lineups: overrides.expected_lineups,
-      missing_players: overrides.missing_players,
-      recent_team_form: overrides.recent_team_form,
-      team_stats: overrides.team_stats,
-      context_label: overrides.context_label
-    }
-  end
-
-  defp local_home_prediction(match_context) do
-    previous_client = Application.get_env(:wc_insights, :ai_prediction_client)
-
-    try do
-      Application.put_env(:wc_insights, :ai_prediction_client, WcInsightsWeb.HomeLive.LocalPredictionClient)
-      Predictions.predict_match(match_context)
-    after
-      if previous_client do
-        Application.put_env(:wc_insights, :ai_prediction_client, previous_client)
-      else
-        Application.delete_env(:wc_insights, :ai_prediction_client)
+      case prediction do
+        nil -> acc
+        result -> Map.put(acc, value(match, :id), result)
       end
-    end
-  end
-
-  defp prediction_winner(match, prediction) do
-    case value(prediction, :winner_pick, "Unavailable") do
-      "home" -> value(match, :home_team_name, "Home")
-      "away" -> value(match, :away_team_name, "Away")
-      "draw" -> "Draw"
-      other -> other
-    end
+    end)
   end
 
   defp prediction_confidence(prediction) do
@@ -186,9 +148,7 @@ defmodule WcInsightsWeb.HomeLive do
   end
 
   defp format_datetime(nil), do: "TBD"
-  defp format_datetime(%DateTime{} = dt) do
-    Calendar.strftime(dt, "%Y-%m-%d %H:%M UTC")
-  end
+  defp format_datetime(%DateTime{} = dt), do: Calendar.strftime(dt, "%Y-%m-%d %H:%M UTC")
   defp format_datetime(other), do: to_string(other)
 
   defp normalize_list(value) when is_list(value), do: value
@@ -204,15 +164,13 @@ defmodule WcInsightsWeb.HomeLive do
 
   defp value(value, key, fallback \\ nil)
   defp value(nil, _key, fallback), do: fallback
+
   defp value(map, key, fallback) when is_map(map) do
     case Map.get(map, key) do
       nil -> Map.get(map, to_string(key)) || fallback
       val -> val
     end
   end
-  defp value(_value, _key, fallback), do: fallback
 
-  defmodule LocalPredictionClient do
-    def predict(_request), do: {:error, :skip_external_ai_on_home_page}
-  end
+  defp value(_value, _key, fallback), do: fallback
 end

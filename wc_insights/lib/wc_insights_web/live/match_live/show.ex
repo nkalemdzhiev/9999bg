@@ -8,7 +8,21 @@ defmodule WcInsightsWeb.MatchLive.Show do
   def mount(%{"id" => id}, _session, socket) do
     match_context = safe_call(fn -> FootballData.get_match_context!(id) end, nil)
     match = if match_context, do: match_context.match, else: nil
-    prediction = if match_context, do: safe_call(fn -> Predictions.predict_match(match_context) end, nil), else: nil
+
+    prediction =
+      if match_context do
+        safe_call(
+          fn ->
+            case Predictions.predict_match(match_context) do
+              {:ok, result} -> result
+              {:error, _reason} -> nil
+            end
+          end,
+          nil
+        )
+      else
+        nil
+      end
 
     socket =
       socket
@@ -71,12 +85,8 @@ defmodule WcInsightsWeb.MatchLive.Show do
               </div>
 
               <div class="text-right">
-                <p class="text-sm font-medium text-slate-500">Projected Strength</p>
-                <p class="font-semibold text-slate-700">
-                  <%= value(@match, :home_team_name) %> <%= value(@prediction, :home_score, "-") %> -
-                  <%= value(@prediction, :away_score, "-") %> <%= value(@match, :away_team_name) %>
-                </p>
-                <p class="text-xs text-slate-500">Confidence: <%= value(@prediction, :confidence, "unknown") %></p>
+                <p class="text-sm font-medium text-slate-500">Confidence</p>
+                <p class="font-semibold text-slate-700"><%= value(@prediction, :confidence, "unknown") %></p>
               </div>
             </div>
 
