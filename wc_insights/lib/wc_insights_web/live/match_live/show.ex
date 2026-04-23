@@ -8,7 +8,7 @@ defmodule WcInsightsWeb.MatchLive.Show do
   def mount(%{"id" => id}, _session, socket) do
     match = safe_call(fn -> FootballData.get_match!(id) end, nil)
     prediction = if match, do: safe_call(fn -> Predictions.predict_match(match) end, nil), else: nil
-    odds_comparison = if match and prediction, do: safe_call(fn -> OddsComparison.compare(match, prediction) end, nil), else: nil
+    odds_comparison = if match && prediction, do: safe_call(fn -> OddsComparison.compare(match, prediction) end, nil), else: nil
 
     socket =
       socket
