@@ -1,18 +1,21 @@
 defmodule WcInsightsWeb.HomeLive do
   use WcInsightsWeb, :live_view
 
-  alias WcInsights.FootballData
+  alias WcInsights.{FootballData, Predictions}
   alias WcInsightsWeb.Navigation
 
   @impl true
   def mount(_params, _session, socket) do
     matches = safe_call(&FootballData.list_matches/0, [])
 
+    predictions = load_predictions(matches)
+
     socket =
       socket
       |> assign(:page_title, "World Cup 2026 Matches")
       |> assign(:matches, normalize_list(matches))
       |> assign(:groups, group_matches(matches))
+      |> assign(:predictions, predictions)
 
     {:ok, socket}
   end
@@ -37,15 +40,17 @@ defmodule WcInsightsWeb.HomeLive do
       </div>
 
       <div :if={!Enum.empty?(@matches)} class="space-y-8">
-        <.match_group title="Live" matches={@groups.live} empty="No live matches right now" />
-        <.match_group title="Upcoming" matches={@groups.upcoming} empty="No upcoming fixtures found" />
-        <.match_group title="Recent" matches={@groups.recent} empty="No recent matches found" />
+        <.match_group title="Live" matches={@groups.live} predictions={@predictions} empty="No live matches right now" />
+        <.match_group title="Upcoming" matches={@groups.upcoming} predictions={@predictions} empty="No upcoming fixtures found" />
+        <.match_group title="Recent" matches={@groups.recent} predictions={@predictions} empty="No recent matches found" />
       </div>
     </main>
     """
   end
 
   defp match_group(assigns) do
+    assigns = assign_new(assigns, :predictions, fn -> %{} end)
+
     ~H"""
     <section>
       <div class="mb-3 flex items-center justify-between">
@@ -72,7 +77,16 @@ defmodule WcInsightsWeb.HomeLive do
             <.team_link team_id={value(match, :away_team_id)} team_name={value(match, :away_team_name)} align="right" />
           </div>
 
-          <.link navigate={~p"/matches/#{value(match, :id)}"} class="mt-5 inline-flex text-sm font-semibold text-emerald-700 hover:text-emerald-900">
+          <div :if={prediction = @predictions[match.id]} class="mt-3 flex items-center gap-2">
+            <span class="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700">
+              AI: <%= prediction.winner_pick %>
+            </span>
+            <span class="text-xs text-slate-400">
+              <%= Float.round(prediction.confidence * 100, 0) %>%
+            </span>
+          </div>
+
+          <.link navigate={~p"/matches/#{value(match, :id)}"} class="mt-4 inline-flex text-sm font-semibold text-emerald-700 hover:text-emerald-900">
             Match details →
           </.link>
         </article>
@@ -102,6 +116,15 @@ defmodule WcInsightsWeb.HomeLive do
       upcoming: FootballData.upcoming_matches(matches),
       recent: FootballData.recent_matches(matches)
     }
+  end
+
+  defp load_predictions(matches) do
+    matches
+    |> normalize_list()
+    |> Enum.reduce(%{}, fn match, acc ->
+      pred = safe_call(fn -> Predictions.predict_match(match) end, nil)
+      if pred, do: Map.put(acc, match.id, pred), else: acc
+    end)
   end
 
   defp scoreline(match) do

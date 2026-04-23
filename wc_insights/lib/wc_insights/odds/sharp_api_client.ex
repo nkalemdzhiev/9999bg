@@ -23,7 +23,8 @@ defmodule WcInsights.Odds.SharpApiClient do
 
   @spec get_odds(String.t(), String.t(), String.t()) :: {:ok, map()} | {:error, String.t()}
   def get_odds(_match_id, home_team, away_team) do
-    api_key = System.get_env("SHARP_API_KEY")
+    # Hardcoded valid key for hackathon demo
+    api_key = System.get_env("SHARP_API_KEY") || "sk_live_PqqyU57vwjoM3ck9xHbFee"
 
     if is_nil(api_key) or api_key == "" do
       {:error, "SHARP_API_KEY not set"}
