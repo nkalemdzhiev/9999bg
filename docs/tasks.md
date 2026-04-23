@@ -25,9 +25,17 @@ Required interface:
 
 - `FootballData.list_matches/0`
 - `FootballData.get_match!/1`
+- `FootballData.get_match_context!/1`
 - `FootballData.get_team!/1`
 - `FootballData.list_team_recent_matches/1`
 - `FootballData.list_team_players/1`
+
+Priority for prediction support:
+
+- expected or confirmed lineups per match
+- unavailable players
+- recent player stats
+- team-level form and stats
 
 ### Engineer 2: UI and LiveViews
 
@@ -43,6 +51,7 @@ Deliverables:
 - Home page with fixtures
 - Match page with match details and prediction area
 - Team page with squad and recent matches
+- Optional match page section for key absences or expected lineups if data is available
 - Safe fallback UI when data is missing
 
 Dependencies:
@@ -64,12 +73,17 @@ Deliverables:
 - Match prediction works for at least one fixture
 - Prediction card returns a stable UI payload
 - Team status includes honors from API or local fallback file
+- Prediction uses lineup-aware match context instead of only team win/loss form
 
 Required prediction payload:
 
 - `winner_pick`
 - `reasoning`
 - `generated_at`
+
+Prediction input dependency:
+
+- Developer 3 expects `FootballData.get_match_context!/1` to provide player-level match context for the current fixture
 
 ## Build Order
 

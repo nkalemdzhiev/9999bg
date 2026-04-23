@@ -29,6 +29,7 @@ The architecture is intentionally simple so three people can work in parallel an
 - Show home and away team
 - Show kickoff time, status, and score
 - Show recent form if available
+- Show expected lineup or key absences if available
 - Show AI prediction card
 
 ### Team Status Page
@@ -56,9 +57,23 @@ Functions to implement:
 
 - `list_matches/0`
 - `get_match!/1`
+- `get_match_context!/1`
 - `get_team!/1`
 - `list_team_recent_matches/1`
 - `list_team_players/1`
+
+Suggested `get_match_context!/1` payload:
+
+- `match`
+- `home_team`
+- `away_team`
+- `home_players`
+- `away_players`
+- `expected_lineups` or `confirmed_lineups`
+- `missing_players`
+- `recent_team_form`
+- `recent_player_stats`
+- `team_stats`
 
 ### Prediction Layer
 
@@ -69,7 +84,7 @@ Functions to implement:
 
 `Predictions`
 
-- Builds prompt input from normalized football data
+- Builds prompt input from normalized football data with lineup-aware match context
 - Parses and returns a UI-friendly result
 - Optionally caches per-match output for the MVP
 
@@ -77,6 +92,14 @@ Functions to implement:
 
 - `predict_match/1`
 - `get_cached_prediction/1`
+
+Prediction input should prioritize:
+
+- expected or confirmed players for the current match
+- missing or unavailable players
+- recent player contributions
+- team form and team-level stats
+- tournament context if available
 
 Suggested prediction shape:
 
@@ -126,9 +149,9 @@ Responsibilities:
 
 ### Match Page Flow
 
-1. `MatchLive.Show` calls `FootballData.get_match!/1`
+1. `MatchLive.Show` calls `FootballData.get_match_context!/1`
 2. `Predictions.predict_match/1` generates or loads a cached prediction
-3. Render score, status, and prediction card
+3. Render score, status, lineup context, and prediction card
 
 ### Team Page Flow
 

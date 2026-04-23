@@ -21,6 +21,15 @@ These files are intended to be moved or renamed into the final app namespace onc
 - `predict_match/1`
 - `get_cached_prediction/1`
 
+Expected long-term input:
+
+- normalized match context, not only a bare match record
+- home and away players for the current fixture
+- expected or confirmed lineups when available
+- missing players
+- recent player stats
+- recent team form and team stats
+
 Prediction payload:
 
 - `match_id`
@@ -43,5 +52,6 @@ Team status payload:
 ## Integration Plan
 
 - Replace `WorldCupInsights.Fixtures` calls with `FootballData` once Developer 1 lands the data layer.
+- Replace simple fixture-only prediction input with `FootballData.get_match_context!/1`.
 - Replace pass-through cache behavior with ETS, Cachex, or DB if needed.
 - Keep the return shapes stable so Developer 2 can wire the UI immediately.
