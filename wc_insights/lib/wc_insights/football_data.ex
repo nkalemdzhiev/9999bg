@@ -161,8 +161,8 @@ defmodule WcInsights.FootballData do
   defp parse_datetime(nil), do: nil
   defp parse_datetime(""), do: nil
   defp parse_datetime(string) when is_binary(string) do
-    case DateTime.from_iso8601(string) do
-      {:ok, dt, _offset} -> dt
+    case NaiveDateTime.from_iso8601(string) do
+      {:ok, naive} -> DateTime.from_naive!(naive, "Etc/UTC")
       _ -> nil
     end
   end
