@@ -38,7 +38,7 @@ defmodule WcInsights.FootballApi.Client do
   defp request(endpoint, params) do
     url = "#{@base_url}/#{@api_key}#{endpoint}"
 
-    case Req.get(url, params: params) do
+    case Req.get(url, params: params, retry: false, receive_timeout: 5_000) do
       {:ok, %{status: 200, body: body}} ->
         {:ok, body}
 

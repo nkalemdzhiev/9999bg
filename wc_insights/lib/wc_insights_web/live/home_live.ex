@@ -1,7 +1,7 @@
 defmodule WcInsightsWeb.HomeLive do
   use WcInsightsWeb, :live_view
 
-  alias WcInsights.FootballData
+  alias WcInsights.{FootballData, PredictionSampleData, Predictions}
   alias WcInsightsWeb.Navigation
 
   @impl true
@@ -13,6 +13,7 @@ defmodule WcInsightsWeb.HomeLive do
       |> assign(:page_title, "World Cup 2026 Matches")
       |> assign(:matches, normalize_list(matches))
       |> assign(:groups, group_matches(matches))
+      |> assign(:predictions, predictions_by_match(matches))
 
     {:ok, socket}
   end
@@ -37,9 +38,9 @@ defmodule WcInsightsWeb.HomeLive do
       </div>
 
       <div :if={!Enum.empty?(@matches)} class="space-y-8">
-        <.match_group title="Live" matches={@groups.live} empty="No live matches right now" />
-        <.match_group title="Upcoming" matches={@groups.upcoming} empty="No upcoming fixtures found" />
-        <.match_group title="Recent" matches={@groups.recent} empty="No recent matches found" />
+        <.match_group title="Live" matches={@groups.live} predictions={@predictions} empty="No live matches right now" />
+        <.match_group title="Upcoming" matches={@groups.upcoming} predictions={@predictions} empty="No upcoming fixtures found" />
+        <.match_group title="Recent" matches={@groups.recent} predictions={@predictions} empty="No recent matches found" />
       </div>
     </main>
     """
@@ -75,6 +76,16 @@ defmodule WcInsightsWeb.HomeLive do
           <.link navigate={~p"/matches/#{value(match, :id)}"} class="mt-5 inline-flex text-sm font-semibold text-emerald-700 hover:text-emerald-900">
             Match details →
           </.link>
+
+          <div :if={prediction = @predictions[value(match, :id)]} class="mt-4 rounded-lg bg-emerald-50 p-3">
+            <p class="text-xs font-bold uppercase text-emerald-700">Predicted winner</p>
+            <div class="mt-1 flex flex-wrap items-center justify-between gap-2">
+              <span class="text-base font-bold text-slate-950"><%= prediction_winner(match, prediction) %></span>
+              <span class="rounded-full bg-white px-3 py-1 text-xs font-bold uppercase text-emerald-700 ring-1 ring-emerald-200">
+                <%= prediction_confidence(prediction) %> confidence
+              </span>
+            </div>
+          </div>
         </article>
       </div>
     </section>
@@ -102,6 +113,69 @@ defmodule WcInsightsWeb.HomeLive do
       upcoming: FootballData.upcoming_matches(matches),
       recent: FootballData.recent_matches(matches)
     }
+  end
+
+  defp predictions_by_match(matches) do
+    matches
+    |> normalize_list()
+    |> Map.new(fn match ->
+      prediction =
+        safe_call(fn ->
+          match
+          |> home_match_context()
+          |> local_home_prediction()
+        end, nil)
+
+      {value(match, :id), prediction}
+    end)
+  end
+
+  defp home_match_context(match) do
+    overrides =
+      PredictionSampleData.match_overrides(
+        value(match, :id),
+        value(match, :home_team_id),
+        value(match, :away_team_id)
+      )
+
+    %{
+      match: match,
+      home_team: %{id: value(match, :home_team_id), name: value(match, :home_team_name, "Home")},
+      away_team: %{id: value(match, :away_team_id), name: value(match, :away_team_name, "Away")},
+      expected_lineups: overrides.expected_lineups,
+      missing_players: overrides.missing_players,
+      recent_team_form: overrides.recent_team_form,
+      team_stats: overrides.team_stats,
+      context_label: overrides.context_label
+    }
+  end
+
+  defp local_home_prediction(match_context) do
+    previous_client = Application.get_env(:wc_insights, :ai_prediction_client)
+
+    try do
+      Application.put_env(:wc_insights, :ai_prediction_client, WcInsightsWeb.HomeLive.LocalPredictionClient)
+      Predictions.predict_match(match_context)
+    after
+      if previous_client do
+        Application.put_env(:wc_insights, :ai_prediction_client, previous_client)
+      else
+        Application.delete_env(:wc_insights, :ai_prediction_client)
+      end
+    end
+  end
+
+  defp prediction_winner(match, prediction) do
+    case value(prediction, :winner_pick, "Unavailable") do
+      "home" -> value(match, :home_team_name, "Home")
+      "away" -> value(match, :away_team_name, "Away")
+      "draw" -> "Draw"
+      other -> other
+    end
+  end
+
+  defp prediction_confidence(prediction) do
+    value(prediction, :confidence, "medium")
   end
 
   defp scoreline(match) do
@@ -137,4 +211,8 @@ defmodule WcInsightsWeb.HomeLive do
     end
   end
   defp value(_value, _key, fallback), do: fallback
+
+  defmodule LocalPredictionClient do
+    def predict(_request), do: {:error, :skip_external_ai_on_home_page}
+  end
 end
