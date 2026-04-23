@@ -47,6 +47,15 @@ defmodule WcInsights.Predictions do
   end
 
   @doc """
+  Fast deterministic prediction without calling Gemini API.
+  Used on the home page for speed. Real AI is on the match detail page.
+  """
+  @spec predict_match_quick(Match.t()) :: prediction_result()
+  def predict_match_quick(%Match{} = match) do
+    fallback_prediction(match)
+  end
+
+  @doc """
   Predict from full match context (used by match detail page).
   Returns {:ok, result} | {:error, reason} tuple.
   """

@@ -150,7 +150,9 @@ defmodule WcInsightsWeb.HomeLive do
     |> Enum.reduce(%{}, fn match, acc ->
       prediction =
         safe_call(fn ->
-          case Predictions.predict_match(match) do
+          # Use quick deterministic prediction for homepage speed
+          # Real Gemini AI is called on the match detail page only
+          case Predictions.predict_match_quick(match) do
             %{winner_pick: _} = result -> result
             _ -> nil
           end
