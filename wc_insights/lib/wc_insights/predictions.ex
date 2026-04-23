@@ -4,7 +4,7 @@ defmodule WcInsights.Predictions do
   """
 
   alias FootballData.Match
-  alias WcInsights.OpenAI.Client
+  alias WcInsights.Gemini.Client
   alias WcInsights.FootballData
 
   @type prediction_result :: %{

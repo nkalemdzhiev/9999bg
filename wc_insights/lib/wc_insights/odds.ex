@@ -28,7 +28,7 @@ defmodule WcInsights.Odds do
 
     case SharpApiClient.get_odds(match_id_str, home_team, away_team) do
       {:ok, odds} -> {:ok, Map.put(odds, :source, :live)}
-      {:error, _} -> fetch_demo_odds(match_id_str)
+      {:error, _reason} -> fetch_fallback_odds(match_id_str, home_team, away_team)
     end
   end
 
@@ -84,34 +84,10 @@ defmodule WcInsights.Odds do
   # Private
   # ------------------------------------------------------------------
 
-  defp fetch_demo_odds(match_id_str) do
-    path = Path.join(:code.priv_dir(:wc_insights), "data/demo_odds.json")
+  defp fetch_fallback_odds(_match_id_str, "", ""), do: {:error, "No team names for fallback odds"}
 
-    if File.exists?(path) do
-      path
-      |> File.read!()
-      |> Jason.decode!()
-      |> Map.get("odds", [])
-      |> Enum.find(fn o -> to_string(o["match_id"]) == match_id_str end)
-      |> case do
-        nil -> {:error, "No demo odds for match #{match_id_str}"}
-        odds -> {:ok, atomize_odds(odds)}
-      end
-    else
-      {:error, "Demo odds file not found"}
-    end
-  end
-
-  defp atomize_odds(odds) do
-    %{
-      match_id: to_string(odds["match_id"]),
-      home_team: odds["home_team"],
-      away_team: odds["away_team"],
-      home_odds: odds["home_odds"],
-      draw_odds: odds["draw_odds"],
-      away_odds: odds["away_odds"],
-      bookmaker: odds["bookmaker"],
-      source: :demo
-    }
+  defp fetch_fallback_odds(_match_id_str, home_team, away_team) do
+    odds = fallback_odds(home_team, away_team)
+    {:ok, odds}
   end
 end
