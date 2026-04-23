@@ -1,77 +1,109 @@
-[
-  {
-    "fixture": {
-      "id": 239625,
-      "date": "2026-06-11T19:00:00+00:00",
-      "status": { "short": "NS", "long": "Not Started" },
-      "venue": { "name": "Azteca Stadium", "city": "Mexico City" }
+{
+  "events": [
+    {
+      "idEvent": "2391728",
+      "strTimestamp": "2026-06-11T19:00:00",
+      "strEvent": "Mexico vs South Africa",
+      "strSport": "Soccer",
+      "idLeague": "4429",
+      "strLeague": "FIFA World Cup",
+      "strSeason": "2026",
+      "strHomeTeam": "Mexico",
+      "strAwayTeam": "South Africa",
+      "intHomeScore": null,
+      "intAwayScore": null,
+      "intRound": "1",
+      "strVenue": "Estadio Azteca",
+      "strCity": "Mexico City, MX",
+      "idHomeTeam": "134497",
+      "idAwayTeam": "136482",
+      "strHomeTeamBadge": "https://r2.thesportsdb.com/images/media/team/badge/3rmosi1748525208.png",
+      "strAwayTeamBadge": "https://r2.thesportsdb.com/images/media/team/badge/xjz9j91553368824.png",
+      "strStatus": "Not Started"
     },
-    "league": { "id": 1, "name": "World Cup", "season": 2026, "round": "Group Stage - 1" },
-    "teams": {
-      "home": { "id": 26, "name": "Mexico", "logo": "https://media.api-sports.io/football/teams/26.png" },
-      "away": { "id": 24, "name": "Argentina", "logo": "https://media.api-sports.io/football/teams/24.png" }
+    {
+      "idEvent": "2461104",
+      "strTimestamp": "2026-06-12T19:00:00",
+      "strEvent": "Canada vs Bosnia-Herzegovina",
+      "strSport": "Soccer",
+      "idLeague": "4429",
+      "strLeague": "FIFA World Cup",
+      "strSeason": "2026",
+      "strHomeTeam": "Canada",
+      "strAwayTeam": "Bosnia-Herzegovina",
+      "intHomeScore": null,
+      "intAwayScore": null,
+      "intRound": "1",
+      "strVenue": "BC Place",
+      "strCity": "Vancouver, CA",
+      "idHomeTeam": "134501",
+      "idAwayTeam": "133955",
+      "strHomeTeamBadge": "https://r2.thesportsdb.com/images/media/team/badge/uxwyxv1448813596.png",
+      "strAwayTeamBadge": "https://r2.thesportsdb.com/images/media/team/badge/vs8qvq1455471341.png",
+      "strStatus": "Not Started"
     },
-    "goals": { "home": null, "away": null },
-    "score": { "halftime": { "home": null, "away": null } }
-  },
-  {
-    "fixture": {
-      "id": 239626,
-      "date": "2026-06-12T16:00:00+00:00",
-      "status": { "short": "NS", "long": "Not Started" },
-      "venue": { "name": "SoFi Stadium", "city": "Los Angeles" }
+    {
+      "idEvent": "2461105",
+      "strTimestamp": "2026-06-12T16:00:00",
+      "strEvent": "Brazil vs France",
+      "strSport": "Soccer",
+      "idLeague": "4429",
+      "strLeague": "FIFA World Cup",
+      "strSeason": "2026",
+      "strHomeTeam": "Brazil",
+      "strAwayTeam": "France",
+      "intHomeScore": null,
+      "intAwayScore": null,
+      "intRound": "1",
+      "strVenue": "SoFi Stadium",
+      "strCity": "Los Angeles, US",
+      "idHomeTeam": "134496",
+      "idAwayTeam": "133574",
+      "strHomeTeamBadge": "https://r2.thesportsdb.com/images/media/team/badge/3rmosi1748525208.png",
+      "strAwayTeamBadge": "https://r2.thesportsdb.com/images/media/team/badge/xtwxyt1420709369.png",
+      "strStatus": "Not Started"
     },
-    "league": { "id": 1, "name": "World Cup", "season": 2026, "round": "Group Stage - 1" },
-    "teams": {
-      "home": { "id": 6, "name": "Brazil", "logo": "https://media.api-sports.io/football/teams/6.png" },
-      "away": { "id": 2, "name": "France", "logo": "https://media.api-sports.io/football/teams/2.png" }
+    {
+      "idEvent": "2461106",
+      "strTimestamp": "2026-06-13T14:00:00",
+      "strEvent": "Germany vs Spain",
+      "strSport": "Soccer",
+      "idLeague": "4429",
+      "strLeague": "FIFA World Cup",
+      "strSeason": "2026",
+      "strHomeTeam": "Germany",
+      "strAwayTeam": "Spain",
+      "intHomeScore": null,
+      "intAwayScore": null,
+      "intRound": "1",
+      "strVenue": "MetLife Stadium",
+      "strCity": "New York, US",
+      "idHomeTeam": "133848",
+      "idAwayTeam": "133604",
+      "strHomeTeamBadge": "https://r2.thesportsdb.com/images/media/team/badge/ytwxyt1420709369.png",
+      "strAwayTeamBadge": "https://r2.thesportsdb.com/images/media/team/badge/xtwxyt1420709369.png",
+      "strStatus": "Not Started"
     },
-    "goals": { "home": null, "away": null },
-    "score": { "halftime": { "home": null, "away": null } }
-  },
-  {
-    "fixture": {
-      "id": 239627,
-      "date": "2026-06-12T19:00:00+00:00",
-      "status": { "short": "NS", "long": "Not Started" },
-      "venue": { "name": "MetLife Stadium", "city": "New York" }
-    },
-    "league": { "id": 1, "name": "World Cup", "season": 2026, "round": "Group Stage - 1" },
-    "teams": {
-      "home": { "id": 14, "name": "Germany", "logo": "https://media.api-sports.io/football/teams/14.png" },
-      "away": { "id": 15, "name": "Spain", "logo": "https://media.api-sports.io/football/teams/15.png" }
-    },
-    "goals": { "home": null, "away": null },
-    "score": { "halftime": { "home": null, "away": null } }
-  },
-  {
-    "fixture": {
-      "id": 239628,
-      "date": "2026-06-13T14:00:00+00:00",
-      "status": { "short": "NS", "long": "Not Started" },
-      "venue": { "name": "AT&T Stadium", "city": "Dallas" }
-    },
-    "league": { "id": 1, "name": "World Cup", "season": 2026, "round": "Group Stage - 1" },
-    "teams": {
-      "home": { "id": 10, "name": "England", "logo": "https://media.api-sports.io/football/teams/10.png" },
-      "away": { "id": 21, "name": "Portugal", "logo": "https://media.api-sports.io/football/teams/21.png" }
-    },
-    "goals": { "home": null, "away": null },
-    "score": { "halftime": { "home": null, "away": null } }
-  },
-  {
-    "fixture": {
-      "id": 239629,
-      "date": "2026-06-13T17:00:00+00:00",
-      "status": { "short": "FT", "long": "Match Finished" },
-      "venue": { "name": "Hard Rock Stadium", "city": "Miami" }
-    },
-    "league": { "id": 1, "name": "World Cup", "season": 2026, "round": "Group Stage - 1" },
-    "teams": {
-      "home": { "id": 27, "name": "USA", "logo": "https://media.api-sports.io/football/teams/27.png" },
-      "away": { "id": 3, "name": "Netherlands", "logo": "https://media.api-sports.io/football/teams/3.png" }
-    },
-    "goals": { "home": 2, "away": 1 },
-    "score": { "halftime": { "home": 1, "away": 0 } }
-  }
-]
+    {
+      "idEvent": "2407713",
+      "strTimestamp": "2026-04-01T00:00:00",
+      "strEvent": "Brazil vs Croatia",
+      "strSport": "Soccer",
+      "idLeague": "4562",
+      "strLeague": "International Friendlies",
+      "strSeason": "2026",
+      "strHomeTeam": "Brazil",
+      "strAwayTeam": "Croatia",
+      "intHomeScore": "3",
+      "intAwayScore": "1",
+      "intRound": "11",
+      "strVenue": "",
+      "strCity": "",
+      "idHomeTeam": "134496",
+      "idAwayTeam": "133912",
+      "strHomeTeamBadge": "https://r2.thesportsdb.com/images/media/team/badge/jl6dip1726167280.png",
+      "strAwayTeamBadge": "https://r2.thesportsdb.com/images/media/team/badge/vvtsyu1455465317.png",
+      "strStatus": "Match Finished"
+    }
+  ]
+}

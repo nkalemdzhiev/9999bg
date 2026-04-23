@@ -24,8 +24,7 @@ config :wc_insights, WcInsightsWeb.Endpoint,
   http: [port: String.to_integer(System.get_env("PORT", "4000"))]
 
 config :wc_insights,
-  football_api_key: System.get_env("FOOTBALL_API_KEY"),
-  football_base_url: System.get_env("FOOTBALL_BASE_URL") || "https://v3.football.api-sports.io"
+  thesportsdb_api_key: System.get_env("THESPORTSDB_API_KEY") || "3"
 
 if config_env() == :prod do
   # The secret key base is used to sign/encrypt cookies and other secrets.

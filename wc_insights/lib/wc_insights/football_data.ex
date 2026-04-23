@@ -1,6 +1,6 @@
 defmodule WcInsights.FootballData do
   @moduledoc """
-  Normalized football data layer.
+  Normalized football data layer using TheSportsDB.
   """
 
   alias FootballData.Match
@@ -8,78 +8,96 @@ defmodule WcInsights.FootballData do
   alias FootballData.Player
 
   def list_matches do
-    case WcInsights.FootballApi.Client.get_fixtures(%{league: 1, season: 2026}) do
-      {:ok, %{"response" => fixtures}} ->
-        Enum.map(fixtures, &parse_match/1)
+    case WcInsights.FootballApi.Client.get_fixtures("2026") do
+      {:ok, %{"events" => events}} when is_list(events) ->
+        Enum.map(events, &parse_event/1)
+
+      {:ok, %{"events" => nil}} ->
+        load_mock_matches()
 
       {:error, _reason} ->
         load_mock_matches()
     end
   end
 
-  def get_match!(match_id) do
-    case WcInsights.FootballApi.Client.get_fixtures(%{id: match_id}) do
-      {:ok, %{"response" => [fixture | _]}} ->
-        parse_match(fixture)
+  def get_match!(match_id) when is_integer(match_id) do
+    get_match!(Integer.to_string(match_id))
+  end
 
-      {:ok, %{"response" => []}} ->
-        load_mock_matches()
-        |> Enum.find(&(&1.id == match_id))
-        |> case do
-          nil -> raise "Match not found"
-          match -> match
-        end
+  def get_match!(match_id) do
+    case WcInsights.FootballApi.Client.get_event(match_id) do
+      {:ok, %{"events" => [event | _]}} ->
+        parse_event(event)
+
+      {:ok, %{"events" => []}} ->
+        find_mock_match(match_id)
 
       {:error, _reason} ->
-        load_mock_matches()
-        |> Enum.find(&(&1.id == match_id))
-        |> case do
-          nil -> raise "Match not found"
-          match -> match
-        end
+        find_mock_match(match_id)
     end
+  end
+
+  def get_team!(team_id) when is_integer(team_id) do
+    get_team!(Integer.to_string(team_id))
   end
 
   def get_team!(team_id) do
     case WcInsights.FootballApi.Client.get_team(team_id) do
-      {:ok, %{"response" => [data | _]}} ->
-        parse_team(data)
+      {:ok, %{"teams" => [team | _]}} ->
+        if team["idTeam"] == team_id do
+          parse_team(team)
+        else
+          search_team_fallback(team_id)
+        end
 
-      {:ok, %{"response" => []}} ->
-        raise "Team not found"
+      {:ok, %{"teams" => nil}} ->
+        search_team_fallback(team_id)
 
       {:error, _reason} ->
-        %Team{
-          id: team_id,
-          name: "Team #{team_id}",
-          code: nil,
-          country: "Unknown",
-          founded: nil,
-          national: true,
-          logo: nil,
-          venue_name: nil,
-          venue_city: nil,
-          venue_capacity: nil
-        }
+        search_team_fallback(team_id)
+    end
+  end
+
+  defp search_team_fallback(team_id) do
+    matches = list_matches()
+
+    team_name =
+      Enum.find_value(matches, fn m ->
+        cond do
+          to_string(m.home_team_id) == to_string(team_id) -> m.home_team_name
+          to_string(m.away_team_id) == to_string(team_id) -> m.away_team_name
+          true -> nil
+        end
+      end)
+
+    if team_name do
+      case WcInsights.FootballApi.Client.get_team_by_name(team_name) do
+        {:ok, %{"teams" => [team | _]}} -> parse_team(team)
+        _ -> build_placeholder_team(team_id, team_name)
+      end
+    else
+      build_placeholder_team(team_id, "Team #{team_id}")
     end
   end
 
   def list_team_recent_matches(team_id) do
-    case WcInsights.FootballApi.Client.get_fixtures(%{team: team_id, last: 5}) do
-      {:ok, %{"response" => fixtures}} ->
-        Enum.map(fixtures, &parse_match/1)
+    case WcInsights.FootballApi.Client.get_last_events(team_id) do
+      {:ok, %{"results" => events}} when is_list(events) ->
+        Enum.map(events, &parse_event/1)
 
-      {:error, _reason} ->
+      _ ->
         []
     end
   end
 
   def list_team_players(team_id) do
     case WcInsights.FootballApi.Client.get_squad(team_id) do
-      {:ok, %{"response" => [%{"players" => players} | _]}} ->
-        Enum.map(players, &parse_player/1)
+      {:ok, %{"player" => players}} when is_list(players) ->
+        players
+        |> Enum.reject(fn p -> p["strPosition"] in ["Manager", "Coach", "Head Coach", ""] end)
+        |> Enum.map(&parse_player/1)
 
-      {:error, _reason} ->
+      _ ->
         []
     end
   end
@@ -102,60 +120,128 @@ defmodule WcInsights.FootballData do
     Enum.filter(matches, &(&1.status in finished_statuses))
   end
 
-  defp parse_match(fixture) do
+  defp parse_event(event) do
     %Match{
-      id: get_in(fixture, ["fixture", "id"]),
-      home_team_id: get_in(fixture, ["teams", "home", "id"]),
-      away_team_id: get_in(fixture, ["teams", "away", "id"]),
-      home_team_name: get_in(fixture, ["teams", "home", "name"]) || "TBD",
-      away_team_name: get_in(fixture, ["teams", "away", "name"]) || "TBD",
-      home_team_logo: get_in(fixture, ["teams", "home", "logo"]),
-      away_team_logo: get_in(fixture, ["teams", "away", "logo"]),
-      kickoff_at: parse_datetime(get_in(fixture, ["fixture", "date"])),
-      status: get_in(fixture, ["fixture", "status", "short"]) || "NS",
-      status_long: get_in(fixture, ["fixture", "status", "long"]) || "Not Started",
-      round: get_in(fixture, ["league", "round"]),
-      venue_name: get_in(fixture, ["fixture", "venue", "name"]),
-      venue_city: get_in(fixture, ["fixture", "venue", "city"]),
-      score_home: get_in(fixture, ["goals", "home"]),
-      score_away: get_in(fixture, ["goals", "away"]),
-      score_halftime_home: get_in(fixture, ["score", "halftime", "home"]),
-      score_halftime_away: get_in(fixture, ["score", "halftime", "away"])
+      id: parse_integer(event["idEvent"]),
+      home_team_id: parse_integer(event["idHomeTeam"]),
+      away_team_id: parse_integer(event["idAwayTeam"]),
+      home_team_name: event["strHomeTeam"] || "TBD",
+      away_team_name: event["strAwayTeam"] || "TBD",
+      home_team_logo: event["strHomeTeamBadge"],
+      away_team_logo: event["strAwayTeamBadge"],
+      kickoff_at: parse_datetime(event["strTimestamp"]),
+      status: map_status(event["strStatus"]),
+      status_long: event["strStatus"] || "Not Started",
+      round: event["intRound"] |> to_string() |> format_round(),
+      venue_name: event["strVenue"],
+      venue_city: event["strCity"],
+      score_home: parse_integer(event["intHomeScore"]),
+      score_away: parse_integer(event["intAwayScore"]),
+      score_halftime_home: nil,
+      score_halftime_away: nil
     }
   end
 
-  defp parse_team(data) do
+  defp parse_team(team) do
     %Team{
-      id: get_in(data, ["team", "id"]),
-      name: get_in(data, ["team", "name"]) || "Unknown",
-      code: get_in(data, ["team", "code"]),
-      country: get_in(data, ["team", "country"]) || "Unknown",
-      founded: get_in(data, ["team", "founded"]),
-      national: get_in(data, ["team", "national"]) || false,
-      logo: get_in(data, ["team", "logo"]),
-      venue_name: get_in(data, ["venue", "name"]),
-      venue_city: get_in(data, ["venue", "city"]),
-      venue_capacity: get_in(data, ["venue", "capacity"])
+      id: parse_integer(team["idTeam"]),
+      name: team["strTeam"] || "Unknown",
+      code: team["strTeamShort"],
+      country: team["strCountry"] || "Unknown",
+      founded: parse_integer(team["intFormedYear"]),
+      national: team["strLeague"] in ["FIFA World Cup", "International Friendlies", "World Cup Qualifying CONMEBOL"],
+      logo: team["strTeamBadge"],
+      venue_name: team["strStadium"],
+      venue_city: parse_city(team["strLocation"]),
+      venue_capacity: parse_integer(team["intStadiumCapacity"])
     }
   end
 
   defp parse_player(player) do
     %Player{
-      id: player["id"],
-      name: player["name"] || "Unknown",
-      age: player["age"],
-      number: player["number"],
-      position: player["position"],
-      photo: player["photo"]
+      id: player["idPlayer"],
+      name: player["strPlayer"] || "Unknown",
+      age: calculate_age(player["dateBorn"]),
+      number: parse_integer(player["strNumber"]),
+      position: player["strPosition"],
+      photo: player["strThumb"] || player["strCutout"]
     }
   end
 
+  defp map_status(nil), do: "NS"
+  defp map_status("Not Started"), do: "NS"
+  defp map_status("Match Finished"), do: "FT"
+  defp map_status("First Half"), do: "1H"
+  defp map_status("Halftime"), do: "HT"
+  defp map_status("Second Half"), do: "2H"
+  defp map_status("Extra Time"), do: "ET"
+  defp map_status("Penalty Shootout"), do: "P"
+  defp map_status("After Extra Time"), do: "AET"
+  defp map_status("After Penalty"), do: "PEN"
+  defp map_status("Suspended"), do: "SUSP"
+  defp map_status("Interrupted"), do: "INT"
+  defp map_status("Postponed"), do: "PST"
+  defp map_status("Cancelled"), do: "CANC"
+  defp map_status(status), do: status
+
   defp parse_datetime(nil), do: nil
+  defp parse_datetime(""), do: nil
   defp parse_datetime(string) when is_binary(string) do
     case DateTime.from_iso8601(string) do
       {:ok, dt, _offset} -> dt
       _ -> nil
     end
+  end
+
+  defp parse_integer(nil), do: nil
+  defp parse_integer(""), do: nil
+  defp parse_integer(int) when is_integer(int), do: int
+  defp parse_integer(string) when is_binary(string) do
+    case Integer.parse(string) do
+      {num, _} -> num
+      :error -> nil
+    end
+  end
+
+  defp calculate_age(nil), do: nil
+  defp calculate_age(""), do: nil
+  defp calculate_age(date_string) when is_binary(date_string) do
+    case Date.from_iso8601(date_string) do
+      {:ok, birth_date} ->
+        today = Date.utc_today()
+        years = today.year - birth_date.year
+        if Date.before?(today, %{birth_date | year: today.year}), do: years - 1, else: years
+
+      _ ->
+        nil
+    end
+  end
+
+  defp parse_city(nil), do: nil
+  defp parse_city(location) when is_binary(location) do
+    location
+    |> String.split(",")
+    |> List.first()
+    |> String.trim()
+  end
+
+  defp format_round(""), do: nil
+  defp format_round(round) when is_binary(round), do: "Round #{round}"
+  defp format_round(_), do: nil
+
+  defp build_placeholder_team(team_id, name) do
+    %Team{
+      id: parse_integer(team_id),
+      name: name,
+      code: nil,
+      country: "Unknown",
+      founded: nil,
+      national: true,
+      logo: nil,
+      venue_name: nil,
+      venue_city: nil,
+      venue_capacity: nil
+    }
   end
 
   defp load_mock_matches do
@@ -165,9 +251,24 @@ defmodule WcInsights.FootballData do
       path
       |> File.read!()
       |> Jason.decode!()
-      |> Enum.map(&parse_match/1)
+      |> case do
+        %{"events" => events} -> Enum.map(events, &parse_event/1)
+        list when is_list(list) -> Enum.map(list, &parse_event/1)
+        _ -> []
+      end
     else
       []
+    end
+  end
+
+  defp find_mock_match(match_id) do
+    match_id_str = to_string(match_id)
+
+    load_mock_matches()
+    |> Enum.find(fn m -> to_string(m.id) == match_id_str end)
+    |> case do
+      nil -> raise "Match not found"
+      match -> match
     end
   end
 end
