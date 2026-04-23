@@ -37,3 +37,5 @@ The app should provide:
 
 - For hackathon speed, the app should prefer direct integrations and minimal abstraction.
 - If database setup takes too long, use local fallback data for honors and simple in-memory caching for predictions.
+- Implementation should run in autonomous mode: make normal code changes directly without waiting for approval on each edit.
+- Still surface blockers only for external credentials, destructive actions, or irreversible environment changes.

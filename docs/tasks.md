@@ -86,6 +86,8 @@ Required prediction payload:
 - Engineer 1 owns data contracts. Do not rename function signatures without telling the team.
 - Engineer 2 should not call the raw API client directly. Use service modules only.
 - Engineer 3 should return a stable prediction shape early so UI work does not block.
+- During implementation, agents and developers should proceed autonomously on normal repo changes without pausing for approval on each edit.
+- Only stop for approval when an action requires external credentials, destructive operations, or an irreversible environment change.
 - Keep commits small and frequent.
 - Avoid editing the same files unless coordinated first.
 
