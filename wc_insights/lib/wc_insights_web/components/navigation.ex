@@ -1,12 +1,12 @@
-defmodule Nine999BgWeb.Navigation do
-  use Nine999BgWeb, :html
+defmodule WcInsightsWeb.Navigation do
+  use WcInsightsWeb, :html
 
   def main(assigns) do
     ~H"""
     <header class="border-b border-slate-200 bg-white">
       <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
         <.link navigate={~p"/"} class="text-lg font-bold text-slate-950">
-          9999bg
+          World Cup 2026 Insights
         </.link>
 
         <nav class="flex items-center gap-4 text-sm font-medium text-slate-600">

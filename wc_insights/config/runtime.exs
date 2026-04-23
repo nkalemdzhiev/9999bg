@@ -26,6 +26,8 @@ config :wc_insights, WcInsightsWeb.Endpoint,
 config :wc_insights,
   thesportsdb_api_key: System.get_env("THESPORTSDB_API_KEY") || "3"
 
+config :wc_insights, :openai_model, System.get_env("OPENAI_MODEL") || "gpt-4o-mini"
+
 if config_env() == :prod do
   # The secret key base is used to sign/encrypt cookies and other secrets.
   # A default value is used in config/dev.exs and config/test.exs but you
