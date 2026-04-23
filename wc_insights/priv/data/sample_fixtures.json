@@ -1,0 +1,77 @@
+[
+  {
+    "fixture": {
+      "id": 239625,
+      "date": "2026-06-11T19:00:00+00:00",
+      "status": { "short": "NS", "long": "Not Started" },
+      "venue": { "name": "Azteca Stadium", "city": "Mexico City" }
+    },
+    "league": { "id": 1, "name": "World Cup", "season": 2026, "round": "Group Stage - 1" },
+    "teams": {
+      "home": { "id": 26, "name": "Mexico", "logo": "https://media.api-sports.io/football/teams/26.png" },
+      "away": { "id": 24, "name": "Argentina", "logo": "https://media.api-sports.io/football/teams/24.png" }
+    },
+    "goals": { "home": null, "away": null },
+    "score": { "halftime": { "home": null, "away": null } }
+  },
+  {
+    "fixture": {
+      "id": 239626,
+      "date": "2026-06-12T16:00:00+00:00",
+      "status": { "short": "NS", "long": "Not Started" },
+      "venue": { "name": "SoFi Stadium", "city": "Los Angeles" }
+    },
+    "league": { "id": 1, "name": "World Cup", "season": 2026, "round": "Group Stage - 1" },
+    "teams": {
+      "home": { "id": 6, "name": "Brazil", "logo": "https://media.api-sports.io/football/teams/6.png" },
+      "away": { "id": 2, "name": "France", "logo": "https://media.api-sports.io/football/teams/2.png" }
+    },
+    "goals": { "home": null, "away": null },
+    "score": { "halftime": { "home": null, "away": null } }
+  },
+  {
+    "fixture": {
+      "id": 239627,
+      "date": "2026-06-12T19:00:00+00:00",
+      "status": { "short": "NS", "long": "Not Started" },
+      "venue": { "name": "MetLife Stadium", "city": "New York" }
+    },
+    "league": { "id": 1, "name": "World Cup", "season": 2026, "round": "Group Stage - 1" },
+    "teams": {
+      "home": { "id": 14, "name": "Germany", "logo": "https://media.api-sports.io/football/teams/14.png" },
+      "away": { "id": 15, "name": "Spain", "logo": "https://media.api-sports.io/football/teams/15.png" }
+    },
+    "goals": { "home": null, "away": null },
+    "score": { "halftime": { "home": null, "away": null } }
+  },
+  {
+    "fixture": {
+      "id": 239628,
+      "date": "2026-06-13T14:00:00+00:00",
+      "status": { "short": "NS", "long": "Not Started" },
+      "venue": { "name": "AT&T Stadium", "city": "Dallas" }
+    },
+    "league": { "id": 1, "name": "World Cup", "season": 2026, "round": "Group Stage - 1" },
+    "teams": {
+      "home": { "id": 10, "name": "England", "logo": "https://media.api-sports.io/football/teams/10.png" },
+      "away": { "id": 21, "name": "Portugal", "logo": "https://media.api-sports.io/football/teams/21.png" }
+    },
+    "goals": { "home": null, "away": null },
+    "score": { "halftime": { "home": null, "away": null } }
+  },
+  {
+    "fixture": {
+      "id": 239629,
+      "date": "2026-06-13T17:00:00+00:00",
+      "status": { "short": "FT", "long": "Match Finished" },
+      "venue": { "name": "Hard Rock Stadium", "city": "Miami" }
+    },
+    "league": { "id": 1, "name": "World Cup", "season": 2026, "round": "Group Stage - 1" },
+    "teams": {
+      "home": { "id": 27, "name": "USA", "logo": "https://media.api-sports.io/football/teams/27.png" },
+      "away": { "id": 3, "name": "Netherlands", "logo": "https://media.api-sports.io/football/teams/3.png" }
+    },
+    "goals": { "home": 2, "away": 1 },
+    "score": { "halftime": { "home": 1, "away": 0 } }
+  }
+]

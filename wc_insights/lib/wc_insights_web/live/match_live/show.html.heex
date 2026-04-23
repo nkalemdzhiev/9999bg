@@ -1,0 +1,12 @@
+<div class="max-w-4xl mx-auto p-6">
+  <h1 class="text-2xl font-bold mb-4">Match Details</h1>
+  <div class="p-4 border rounded">
+    <div class="flex items-center justify-between">
+      <span class="text-lg font-medium"><%= @match.home_team_name %></span>
+      <span class="text-xl font-bold"><%= @match.score_home || "-" %> : <%= @match.score_away || "-" %></span>
+      <span class="text-lg font-medium"><%= @match.away_team_name %></span>
+    </div>
+    <p class="mt-2 text-sm text-gray-500">Status: <%= @match.status_long %></p>
+    <p class="text-sm text-gray-500">Kickoff: <%= @match.kickoff_at %></p>
+  </div>
+</div>
